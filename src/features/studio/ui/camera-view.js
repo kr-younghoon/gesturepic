@@ -2,16 +2,55 @@
 
 import { useGesture } from '../model/use-gesture'
 import { useCallback } from 'react'
+import { useCapture } from '../model/use-capture'
 
 export function CameraView() {
+  const {
+    capturedImage,
+    isCaptureMode,
+    isPending,
+    handleCapture: onCapture,
+    handleRetake,
+    handleUpload,
+  } = useCapture()
+
   const handleCapture = useCallback(() => {
-    // TODO: 캡처 로직 구현
-    console.log('Captured!')
-  }, [])
+    onCapture(videoRef, canvasRef)
+  }, [onCapture, videoRef, canvasRef])
 
   const { videoRef, canvasRef, isTimerRunning, timeLeft } = useGesture({
     onCapture: handleCapture,
   })
+
+  if (!isCaptureMode) {
+    return (
+      <div className="relative w-full max-w-4xl mx-auto">
+        <div className="relative">
+          <img
+            src={capturedImage}
+            alt="Captured"
+            className="w-full aspect-video rounded-lg"
+          />
+          <div className="absolute bottom-4 left-4 right-4 flex gap-4 justify-center">
+            <button
+              onClick={handleRetake}
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              disabled={isPending}
+            >
+              Retake
+            </button>
+            <button
+              onClick={handleUpload}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              disabled={isPending}
+            >
+              {isPending ? 'Uploading...' : 'Upload'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative w-full max-w-4xl mx-auto">
