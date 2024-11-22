@@ -3,7 +3,7 @@
 import { usePhotos } from '../model/use-photos'
 import { useInView } from 'react-intersection-observer'
 import { useEffect } from 'react'
-import Image from 'next/image'
+import { PhotoCard } from './photo-card'
 
 export function PhotoGrid() {
   const { data, isLoading, fetchNextPage, hasNextPage } = usePhotos()
@@ -16,7 +16,11 @@ export function PhotoGrid() {
   }, [inView, hasNextPage, fetchNextPage])
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center py-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-500"></div>
+      </div>
+    )
   }
 
   if (!data?.pages?.[0]?.photos?.length) {
@@ -31,19 +35,12 @@ export function PhotoGrid() {
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {data.pages.map((page, i) => (
         page.photos.map((photo, index) => (
-          <div
+          <PhotoCard
             key={photo.id}
-            className="relative aspect-square rounded-lg overflow-hidden"
-            ref={i === data.pages.length - 1 && index === page.photos.length - 1 ? ref : undefined}
-          >
-            <Image
-              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${photo.storage_path}`}
-              alt={photo.title || 'Photo'}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            />
-          </div>
+            photo={photo}
+            isLastItem={i === data.pages.length - 1 && index === page.photos.length - 1}
+            observerRef={ref}
+          />
         ))
       ))}
     </div>
