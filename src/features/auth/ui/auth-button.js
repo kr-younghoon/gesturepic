@@ -1,19 +1,23 @@
 'use client'
 
 import { useAuth } from '../model/use-auth'
-import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export function AuthButton() {
   const { user, signInWithGoogle, signOut, loading, error: authError } = useAuth()
-  const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (error) {
-      console.error('Auth error from URL:', error)
+    // Get error from URL if it exists
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const urlError = params.get('error')
+      if (urlError) {
+        console.error('Auth error from URL:', urlError)
+        setError(urlError)
+      }
     }
-  }, [error])
+  }, [])
 
   console.log('AuthButton rendered:', { user, loading, authError, error })
 
