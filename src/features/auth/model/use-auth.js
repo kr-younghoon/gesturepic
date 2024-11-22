@@ -13,7 +13,9 @@ export const useAuth = create((set) => ({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://kaipqjktuazebdqqmcjs.supabase.co/auth/v1/callback'
+          redirectTo: typeof window !== 'undefined' 
+            ? `${window.location.origin}/auth/callback`
+            : 'https://gesturepic.vercel.app/auth/callback'
         }
       })
       if (error) throw error
