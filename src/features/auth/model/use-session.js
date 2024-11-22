@@ -18,8 +18,6 @@ export function useSession() {
 }
 
 export function useSignInWithGoogle() {
-  const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -35,9 +33,6 @@ export function useSignInWithGoogle() {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY })
-    },
   })
 }
 
@@ -46,9 +41,7 @@ export function useSignOut() {
 
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.auth.signOut({
-        scope: 'local'  
-      })
+      const { error } = await supabase.auth.signOut()
       if (error) throw error
     },
     onSuccess: () => {
@@ -56,12 +49,4 @@ export function useSignOut() {
       queryClient.setQueryData(SESSION_QUERY_KEY, null)
     },
   })
-}
-
-// UI 상태 관리를 위한 Zustand 스토어
-export function useAuthUI() {
-  return {
-    isSigningIn: false,
-    setIsSigningIn: (value) => set({ isSigningIn: value }),
-  }
 }
