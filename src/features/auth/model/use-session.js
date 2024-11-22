@@ -1,7 +1,10 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/shared/api/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
+
+const supabase = createClientComponentClient()
 
 const SESSION_QUERY_KEY = ['session']
 
@@ -13,14 +16,15 @@ export function useSession() {
       if (error) throw error
       return session
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 }
 
 export function useSignInWithGoogle() {
+  const router = useRouter()
+  
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -28,16 +32,20 @@ export function useSignInWithGoogle() {
             access_type: 'offline',
             prompt: 'consent',
           },
-        }
+        },
       })
       if (error) throw error
-      return data
+    },
+    onError: (error) => {
+      console.error('Sign in error:', error)
+      router.push(`/?error=${encodeURIComponent(error.message)}`)
     },
   })
 }
 
 export function useSignOut() {
   const queryClient = useQueryClient()
+  const router = useRouter()
 
   return useMutation({
     mutationFn: async () => {
@@ -45,8 +53,12 @@ export function useSignOut() {
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY })
       queryClient.setQueryData(SESSION_QUERY_KEY, null)
+      router.push('/')
+    },
+    onError: (error) => {
+      console.error('Sign out error:', error)
+      router.push(`/?error=${encodeURIComponent(error.message)}`)
     },
   })
 }

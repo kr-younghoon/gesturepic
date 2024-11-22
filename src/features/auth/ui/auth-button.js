@@ -2,22 +2,33 @@
 
 import { useSession, useSignInWithGoogle, useSignOut } from '../model/use-session'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export function AuthButton() {
+  const router = useRouter()
   const { data: session, isLoading: isSessionLoading } = useSession()
   const { mutate: signIn, isPending: isSigningIn } = useSignInWithGoogle()
   const { mutate: signOut } = useSignOut()
 
   useEffect(() => {
-    // Get error from URL if it exists
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const urlError = params.get('error')
-      if (urlError) {
-        console.error('Auth error from URL:', urlError)
-      }
+    // Check for hash fragment response
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token=')) {
+      // Clear hash and reload to handle the token
+      window.location.hash = ''
+      window.location.reload()
+      return
     }
-  }, [])
+
+    // Check for error in URL
+    const params = new URLSearchParams(window.location.search)
+    const urlError = params.get('error')
+    if (urlError) {
+      console.error('Auth error:', urlError)
+      // Clear the error from URL
+      router.replace('/')
+    }
+  }, [router])
 
   const isLoading = isSessionLoading || isSigningIn
 
@@ -63,7 +74,7 @@ export function AuthButton() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Continue with Google
+          Sign in with Google
         </button>
       )}
     </div>
