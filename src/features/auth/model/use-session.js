@@ -1,14 +1,14 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
-
-const supabase = createClientComponentClient()
+import { getSupabaseClient } from '@/shared/api/supabase'
 
 const SESSION_QUERY_KEY = ['session']
 
 export function useSession() {
+  const supabase = getSupabaseClient()
+  
   return useQuery({
     queryKey: SESSION_QUERY_KEY,
     queryFn: async () => {
@@ -21,10 +21,11 @@ export function useSession() {
 
 export function useSignInWithGoogle() {
   const router = useRouter()
+  const supabase = getSupabaseClient()
   
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -35,6 +36,7 @@ export function useSignInWithGoogle() {
         },
       })
       if (error) throw error
+      if (data?.url) window.location.href = data.url
     },
     onError: (error) => {
       console.error('Sign in error:', error)
@@ -46,6 +48,7 @@ export function useSignInWithGoogle() {
 export function useSignOut() {
   const queryClient = useQueryClient()
   const router = useRouter()
+  const supabase = getSupabaseClient()
 
   return useMutation({
     mutationFn: async () => {

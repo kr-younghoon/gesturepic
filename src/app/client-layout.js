@@ -1,14 +1,19 @@
 'use client'
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { supabase } from '@/shared/api/supabase'
+import { getSupabaseClient } from '@/shared/api/supabase'
 import { QueryProvider } from '@/shared/providers/query-provider'
 import { useAuth } from '@/features/auth/model/use-auth'
+
+const queryClient = new QueryClient()
 
 export function ClientLayout({ children }) {
   const { setUser } = useAuth()
 
   useEffect(() => {
+    const supabase = getSupabaseClient()
+
     // Check initial session
     const checkSession = async () => {
       try {
@@ -60,10 +65,12 @@ export function ClientLayout({ children }) {
   }, [setUser])
 
   return (
-    <QueryProvider>
-      <div className="container mx-auto px-4">
-        {children}
-      </div>
-    </QueryProvider>
+    <QueryClientProvider client={queryClient}>
+      <QueryProvider>
+        <div className="container mx-auto px-4">
+          {children}
+        </div>
+      </QueryProvider>
+    </QueryClientProvider>
   )
 }

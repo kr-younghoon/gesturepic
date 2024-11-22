@@ -11,15 +11,6 @@ export function AuthButton() {
   const { mutate: signOut } = useSignOut()
 
   useEffect(() => {
-    // Check for hash fragment response
-    const hash = window.location.hash
-    if (hash && hash.includes('access_token=')) {
-      // Clear hash and reload to handle the token
-      window.location.hash = ''
-      window.location.reload()
-      return
-    }
-
     // Check for error in URL
     const params = new URLSearchParams(window.location.search)
     const urlError = params.get('error')
