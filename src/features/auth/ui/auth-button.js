@@ -5,15 +5,13 @@ import { useAuth } from '../model/use-auth'
 export function AuthButton() {
   const { user, signInWithGoogle, signOut, loading, error } = useAuth()
 
-  if (error) {
-    console.error('Auth error:', error)
-  }
+  console.log('AuthButton rendered:', { user, loading, error })
 
   return (
     <div className="flex flex-col items-center gap-2">
       {loading ? (
         <button className="px-4 py-2 bg-gray-200 rounded-md" disabled>
-          <div className="w-5 h-5 border-t-2 border-blue-500 border-solid rounded-full animate-spin"></div>
+          Loading...
         </button>
       ) : user ? (
         <button
@@ -25,7 +23,7 @@ export function AuthButton() {
       ) : (
         <button
           onClick={signInWithGoogle}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center gap-2"
+          className="flex items-center gap-2 px-4 py-2 text-gray-800 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

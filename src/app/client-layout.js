@@ -23,12 +23,8 @@ export function ClientLayout({ children }) {
   }, [supabase, setUser])
 
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-gray-100">
-        <div className="container mx-auto px-4">
-          {children}
-        </div>
-      </body>
-    </html>
+    <div className="container mx-auto px-4">
+      {children}
+    </div>
   )
 }

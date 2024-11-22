@@ -8,5 +8,11 @@ export const metadata = {
 import { ClientLayout } from './client-layout'
 
 export default function RootLayout({ children }) {
-  return <ClientLayout>{children}</ClientLayout>
+  return (
+    <html lang="en">
+      <body className="min-h-screen bg-gray-100">
+        <ClientLayout>{children}</ClientLayout>
+      </body>
+    </html>
+  )
 }
