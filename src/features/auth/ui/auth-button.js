@@ -1,29 +1,54 @@
 'use client'
 
 import { useAuth } from '../model/use-auth'
+import { useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
 export function AuthButton() {
-  const { user, signInWithGoogle, signOut, loading, error } = useAuth()
+  const { user, signInWithGoogle, signOut, loading, error: authError } = useAuth()
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
 
-  console.log('AuthButton rendered:', { user, loading, error })
+  useEffect(() => {
+    if (error) {
+      console.error('Auth error from URL:', error)
+    }
+  }, [error])
+
+  console.log('AuthButton rendered:', { user, loading, authError, error })
 
   return (
     <div className="flex flex-col items-center gap-2">
+      {error && (
+        <p className="text-sm text-red-500">
+          {error === 'no_session' 
+            ? 'Failed to create session. Please try again.' 
+            : error === 'no_code'
+            ? 'No authentication code provided.'
+            : `Authentication error: ${error}`}
+        </p>
+      )}
       {loading ? (
-        <button className="px-4 py-2 bg-gray-200 rounded-md" disabled>
-          Loading...
+        <button 
+          className="relative px-4 py-2 bg-gray-100 text-gray-400 rounded-md w-[200px] flex items-center justify-center" 
+          disabled
+        >
+          <div className="absolute left-4">
+            <div className="w-5 h-5 border-t-2 border-blue-500 border-solid rounded-full animate-spin" />
+          </div>
+          <span>Connecting...</span>
         </button>
       ) : user ? (
         <button
           onClick={signOut}
-          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+          className="w-[200px] px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
         >
           Sign Out
         </button>
       ) : (
         <button
           onClick={signInWithGoogle}
-          className="flex items-center gap-2 px-4 py-2 text-gray-800 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          className="w-[200px] flex items-center justify-center gap-2 px-4 py-2 text-gray-800 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -46,9 +71,9 @@ export function AuthButton() {
           Continue with Google
         </button>
       )}
-      {error && (
+      {authError && (
         <p className="text-sm text-red-500">
-          {error}
+          {authError}
         </p>
       )}
     </div>
