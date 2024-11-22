@@ -11,31 +11,52 @@ export function ClientLayout({ children }) {
   useEffect(() => {
     // Check initial session
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Error checking session:', error)
-        return
-      }
-      if (session) {
-        console.log('Initial session found:', session)
-        setUser(session.user)
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('Checking initial session:', session)
+        
+        if (error) {
+          console.error('Error checking session:', error)
+          return
+        }
+        
+        if (session?.user) {
+          console.log('Setting initial user:', session.user)
+          setUser(session.user)
+        } else {
+          console.log('No initial session found')
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Error in checkSession:', error)
       }
     }
+
+    // Run initial session check
     checkSession()
 
     // Subscribe to auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session)
-      if (session) {
-        setUser(session.user)
-      } else {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', { event, session })
+      
+      if (event === 'SIGNED_IN') {
+        console.log('User signed in:', session?.user)
+        setUser(session?.user || null)
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out')
         setUser(null)
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed:', session?.user)
+        setUser(session?.user || null)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      console.log('Cleaning up auth subscription')
+      subscription.unsubscribe()
+    }
   }, [supabase, setUser])
 
   return (
