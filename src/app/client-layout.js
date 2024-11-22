@@ -9,9 +9,25 @@ export function ClientLayout({ children }) {
   const { setUser } = useAuth()
 
   useEffect(() => {
+    // Check initial session
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('Error checking session:', error)
+        return
+      }
+      if (session) {
+        console.log('Initial session found:', session)
+        setUser(session.user)
+      }
+    }
+    checkSession()
+
+    // Subscribe to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session)
       if (session) {
         setUser(session.user)
       } else {
