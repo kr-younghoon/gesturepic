@@ -9,10 +9,11 @@ export const useAuth = create((set) => {
     user: null,
     loading: false,
     error: null,
+    isSigningIn: false,
   
     signInWithGoogle: async () => {
       try {
-        set({ loading: true, error: null })
+        set({ loading: true, error: null, isSigningIn: true })
         console.log('Starting Google sign in...')
         
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -33,6 +34,7 @@ export const useAuth = create((set) => {
         set({ error: error.message })
       } finally {
         set({ loading: false })
+        // isSigningIn은 유지 (사용자가 리디렉션되는 동안 로딩 상태 표시)
       }
     },
 
@@ -51,10 +53,11 @@ export const useAuth = create((set) => {
     },
 
     setUser: (user) => {
-      console.log('Setting user:', user)
-      set({ user })
+      set({ user, isSigningIn: false }) // 사용자 설정 시 isSigningIn 초기화
     },
+
     setLoading: (loading) => set({ loading }),
-    clearError: () => set({ error: null })
+
+    clearError: () => set({ error: null }),
   }
 })

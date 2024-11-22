@@ -1,11 +1,11 @@
 'use client'
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useEffect } from 'react'
+import { supabase } from '@/shared/api/supabase'
+import { QueryProvider } from '@/shared/providers/query-provider'
 import { useAuth } from '@/features/auth/model/use-auth'
 
 export function ClientLayout({ children }) {
-  const supabase = createClientComponentClient()
   const { setUser } = useAuth()
 
   useEffect(() => {
@@ -57,11 +57,13 @@ export function ClientLayout({ children }) {
       console.log('Cleaning up auth subscription')
       subscription.unsubscribe()
     }
-  }, [supabase, setUser])
+  }, [setUser])
 
   return (
-    <div className="container mx-auto px-4">
-      {children}
-    </div>
+    <QueryProvider>
+      <div className="container mx-auto px-4">
+        {children}
+      </div>
+    </QueryProvider>
   )
 }

@@ -1,11 +1,12 @@
 'use client'
 
-import { useAuth } from '../model/use-auth'
-import { useEffect, useState } from 'react'
+import { useSession, useSignInWithGoogle, useSignOut } from '../model/use-session'
+import { useEffect } from 'react'
 
 export function AuthButton() {
-  const { user, signInWithGoogle, signOut, loading, error: authError } = useAuth()
-  const [error, setError] = useState(null)
+  const { data: session, isLoading: isSessionLoading } = useSession()
+  const { mutate: signIn, isPending: isSigningIn } = useSignInWithGoogle()
+  const { mutate: signOut } = useSignOut()
 
   useEffect(() => {
     // Get error from URL if it exists
@@ -14,25 +15,15 @@ export function AuthButton() {
       const urlError = params.get('error')
       if (urlError) {
         console.error('Auth error from URL:', urlError)
-        setError(urlError)
       }
     }
   }, [])
 
-  console.log('AuthButton rendered:', { user, loading, authError, error })
+  const isLoading = isSessionLoading || isSigningIn
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {error && (
-        <p className="text-sm text-red-500">
-          {error === 'no_session' 
-            ? 'Failed to create session. Please try again.' 
-            : error === 'no_code'
-            ? 'No authentication code provided.'
-            : `Authentication error: ${error}`}
-        </p>
-      )}
-      {loading ? (
+      {isLoading ? (
         <button 
           className="relative px-4 py-2 bg-gray-100 text-gray-400 rounded-md w-[200px] flex items-center justify-center" 
           disabled
@@ -42,16 +33,16 @@ export function AuthButton() {
           </div>
           <span>Connecting...</span>
         </button>
-      ) : user ? (
+      ) : session ? (
         <button
-          onClick={signOut}
+          onClick={() => signOut()}
           className="w-[200px] px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
         >
           Sign Out
         </button>
       ) : (
         <button
-          onClick={signInWithGoogle}
+          onClick={() => signIn()}
           className="w-[200px] flex items-center justify-center gap-2 px-4 py-2 text-gray-800 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -74,11 +65,6 @@ export function AuthButton() {
           </svg>
           Continue with Google
         </button>
-      )}
-      {authError && (
-        <p className="text-sm text-red-500">
-          {authError}
-        </p>
       )}
     </div>
   )
