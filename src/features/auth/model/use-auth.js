@@ -13,7 +13,7 @@ export const useAuth = create((set) => ({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback`
         }
       })
       if (error) throw error
