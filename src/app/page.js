@@ -7,18 +7,48 @@ export default function Home() {
   const { data: session, isLoading } = useSession()
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-blue-500" />
+      </div>
+    )
+  }
+
+  if (session?.user) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-24">
+        <div className="max-w-2xl text-center">
+          <h1 className="text-4xl font-bold mb-4">Welcome to GesturePic</h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Capture photos with simple hand gestures. Head to the Studio to get started!
+          </p>
+          <div className="flex justify-center gap-4">
+            <a
+              href="/studio"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Go to Studio
+            </a>
+            <a
+              href="/gallery"
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              View Gallery
+            </a>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl lg:static lg:w-auto lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4">
-          Welcome to GesturePic
+    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+      <div className="max-w-2xl text-center">
+        <h1 className="text-4xl font-bold mb-4">Welcome to GesturePic</h1>
+        <p className="text-xl text-gray-600 mb-8">
+          Take photos hands-free using simple gestures. Sign in to get started!
         </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <AuthButton />
-        </div>
+        <AuthButton />
       </div>
     </main>
   )
