@@ -16,6 +16,8 @@ export function useSession() {
       if (error) throw error
       return session
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: false,
   })
 }
 
@@ -52,15 +54,30 @@ export function useSignOut() {
 
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      // Get current session first
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      // Always try to sign out from Supabase
+      await supabase.auth.signOut()
+      
+      // Clear React Query cache
+      queryClient.setQueryData(SESSION_QUERY_KEY, null)
+      
+      // Clear browser storage
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('supabase.auth.token')
+        window.sessionStorage.removeItem('supabase.auth.token')
+      }
+      
+      return session
     },
     onSuccess: () => {
-      queryClient.setQueryData(SESSION_QUERY_KEY, null)
       router.push('/')
     },
     onError: (error) => {
       console.error('Sign out error:', error)
+      // Even on error, try to clear the local state
+      queryClient.setQueryData(SESSION_QUERY_KEY, null)
       router.push(`/?error=${encodeURIComponent(error.message)}`)
     },
   })
