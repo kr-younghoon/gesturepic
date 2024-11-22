@@ -13,6 +13,7 @@ export function useSession() {
       if (error) throw error
       return session
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 }
 
@@ -24,7 +25,11 @@ export function useSignInWithGoogle() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         }
       })
       if (error) throw error
@@ -41,11 +46,14 @@ export function useSignOut() {
 
   return useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut({
+        scope: 'local'  
+      })
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY })
+      queryClient.setQueryData(SESSION_QUERY_KEY, null)
     },
   })
 }
