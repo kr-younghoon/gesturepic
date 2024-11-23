@@ -1,60 +1,39 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-import { useUploadPhoto } from '@/features/photos/model/use-photos'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback } from 'react'
 
 export function useCapture() {
   const [capturedImage, setCapturedImage] = useState(null)
-  const [isCaptureMode, setIsCaptureMode] = useState(true)
-  const { mutateAsync: uploadPhoto, isPending } = useUploadPhoto()
-  const router = useRouter()
+  const [isPending, setIsPending] = useState(false)
 
-  const handleCapture = useCallback((videoRef, canvasRef) => {
-    const canvas = canvasRef.current
-    const video = videoRef.current
-    const context = canvas.getContext('2d')
-
-    // Flip horizontally to mirror the video
-    context.scale(-1, 1)
-    context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height)
-    // Reset transform
-    context.setTransform(1, 0, 0, 1, 0, 0)
-
-    const imageData = canvas.toDataURL('image/jpeg', 0.8)
+  const handleCapture = useCallback((imageData) => {
     setCapturedImage(imageData)
-    setIsCaptureMode(false)
   }, [])
 
   const handleRetake = useCallback(() => {
     setCapturedImage(null)
-    setIsCaptureMode(true)
+    setIsPending(false)
   }, [])
 
   const handleUpload = useCallback(async () => {
     if (!capturedImage) return
 
+    setIsPending(true)
     try {
-      // Convert base64 to blob
-      const response = await fetch(capturedImage)
-      const blob = await response.blob()
-
-      // Create a File object
-      const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
-
-      await uploadPhoto(file)
-      router.push('/gallery')
+      // Upload logic will be implemented later
+      console.log('Upload functionality will be implemented')
     } catch (error) {
-      console.error('Failed to upload photo:', error)
+      console.error('Upload error:', error)
+    } finally {
+      setIsPending(false)
     }
-  }, [capturedImage, uploadPhoto, router])
+  }, [capturedImage])
 
   return {
     capturedImage,
-    isCaptureMode,
     isPending,
     handleCapture,
     handleRetake,
-    handleUpload,
+    handleUpload
   }
 }
