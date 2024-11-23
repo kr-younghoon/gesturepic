@@ -56,12 +56,13 @@ export function NavBar() {
                   : 'hover:bg-gray-100'
               }`}
             >
-              <div className="relative w-8 h-8">
+              <div className="relative h-8 w-8 shrink-0">
                 {session.user.user_metadata?.avatar_url ? (
                   <Image
                     src={session.user.user_metadata.avatar_url}
                     alt="Profile"
-                    fill
+                    width={32}
+                    height={32}
                     className="rounded-full object-cover"
                   />
                 ) : (
