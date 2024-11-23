@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/shared/api/supabase'
 
-const SESSION_QUERY_KEY = ['session']
+export const SESSION_QUERY_KEY = ['session']
 
 export function useSession() {
   const supabase = getSupabaseClient()

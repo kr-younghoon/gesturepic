@@ -10,19 +10,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-let supabaseClient
+let supabaseClient = null
 
 export function getSupabaseClient() {
-  if (!supabaseClient) {
-    supabaseClient = createClientComponentClient()
-  }
+  if (supabaseClient) return supabaseClient
+
+  supabaseClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: true,
+      },
+    }
+  )
+
   return supabaseClient
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-})
+export const supabase = getSupabaseClient()
