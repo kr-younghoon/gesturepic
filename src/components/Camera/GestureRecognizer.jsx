@@ -14,6 +14,7 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
   const [currentGesture, setCurrentGesture] = useState(null);
   const [gestureStartTime, setGestureStartTime] = useState(null);
   const [gestureConfidence, setGestureConfidence] = useState(0);
+  const isCapturing = useRef(false); // 캡처 중복 방지를 위한 플래그
 
   useEffect(() => {
     const initializeGestureRecognizer = async () => {
@@ -159,11 +160,14 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
                 const currentTime = Date.now();
                 if (
                   gestureStartTime &&
-                  currentTime - gestureStartTime >= 3000 // 3초 유지 확인
+                  currentTime - gestureStartTime >= 3000 && // 3초 유지 확인
+                  !isCapturing.current // 캡처 중이 아닐 때만 실행
                 ) {
+                  isCapturing.current = true; // 캡처 중 플래그 설정
                   const imageData = canvasRef.current.toDataURL('image/png');
-                  onCapture(imageData); // 이미지 캡처 데이터 전달
+                  await onCapture(imageData); // 이미지 캡처 데이터 전달
                   resetGesture(); // 상태 초기화
+                  isCapturing.current = false; // 캡처 완료 후 플래그 해제
                 }
               } else {
                 setCurrentGesture(detectedGesture);
