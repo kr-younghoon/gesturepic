@@ -27,11 +27,8 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
             delegate: "GPU"
           },
-          runningMode: "VIDEO",
-          numHands: 2,
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5,
+          numHands: 2,  // 두 손 인식
+          runningMode: "VIDEO"
         });
 
         setIsInitialized(true);
@@ -99,9 +96,56 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
           sx, sy, sWidth, sHeight,
           0, 0, targetWidth, targetHeight
         );
-        
+
         try {
           const results = await gestureRecognizerRef.current.recognizeForVideo(video, performance.now());
+          
+          // 랜드마크 그리기
+          if (results.landmarks) {
+            // 스케일 계수 계산
+            const scaleX = targetWidth / video.videoWidth;
+            const scaleY = targetHeight / video.videoHeight;
+            
+            results.landmarks.forEach((landmarks) => {
+              // 각 랜드마크 포인트 그리기
+              landmarks.forEach((landmark) => {
+                const x = (landmark.x * video.videoWidth - sx) * (targetWidth / sWidth);
+                const y = (landmark.y * video.videoHeight - sy) * (targetHeight / sHeight);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = '#00FF00';
+                ctx.fill();
+              });
+              
+              // 랜드마크 연결선 그리기
+              ctx.beginPath();
+              ctx.strokeStyle = '#00FF00';
+              ctx.lineWidth = 2;
+              
+              // 손가락 연결
+              const fingerConnections = [
+                [0, 1], [1, 2], [2, 3], [3, 4], // 엄지
+                [0, 5], [5, 6], [6, 7], [7, 8], // 검지
+                [0, 9], [9, 10], [10, 11], [11, 12], // 중지
+                [0, 13], [13, 14], [14, 15], [15, 16], // 약지
+                [0, 17], [17, 18], [18, 19], [19, 20], // 소지
+              ];
+              
+              fingerConnections.forEach(([i, j]) => {
+                const x1 = (landmarks[i].x * video.videoWidth - sx) * (targetWidth / sWidth);
+                const y1 = (landmarks[i].y * video.videoHeight - sy) * (targetHeight / sHeight);
+                const x2 = (landmarks[j].x * video.videoWidth - sx) * (targetWidth / sWidth);
+                const y2 = (landmarks[j].y * video.videoHeight - sy) * (targetHeight / sHeight);
+                
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+              });
+              
+              ctx.stroke();
+            });
+          }
+
           if (results.gestures?.length > 0) {
             const gesture = results.gestures[0][0];
             const detectedGesture = gesture.categoryName;
