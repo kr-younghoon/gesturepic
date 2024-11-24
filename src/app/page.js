@@ -1,34 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import HandGesture from '../components/HandGesture';
+import React from 'react';
+import FourCutCamera from '../components/Camera/FourCutCamera';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
-  const [activeCamera, setActiveCamera] = useState(1);
+const Page = () => {
+  const router = useRouter();
 
-  const renderCameraBox = (id) => (
-    <div 
-      className={`bg-black relative flex items-center justify-center cursor-pointer ${
-        activeCamera === id ? 'ring-4 ring-blue-500' : ''
-      }`}
-      onClick={() => setActiveCamera(id)}
-    >
-      {activeCamera === id ? (
-        <HandGesture id={String(id)} />
-      ) : (
-        <div className="text-white">Click to activate camera {id}</div>
-      )}
-    </div>
-  );
+  const handleComplete = (capturedImages) => {
+    // 네컷 촬영 완료 후 결과 페이지로 이동
+    router.push('/result', { state: { images: capturedImages } });
+  };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="grid grid-cols-2 grid-rows-2 gap-4 w-[800px] h-[800px]">
-        {renderCameraBox(1)}
-        {renderCameraBox(2)}
-        {renderCameraBox(3)}
-        {renderCameraBox(4)}
-      </div>
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
+      <h1 className="text-2xl font-bold mb-6">네컷 사진 촬영</h1>
+      <FourCutCamera onComplete={handleComplete} />
     </div>
   );
-}
+};
+
+export default Page;
