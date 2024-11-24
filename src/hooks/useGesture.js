@@ -87,36 +87,32 @@ export function useGesture({ onGesture }) {
   }, [processResults]);
 
   const start = useCallback(async () => {
+    if (gestureRecognizerRef.current) return;
+  
     try {
-      // Vision Tasks 파일 로드
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
       );
-
-      // GestureRecognizer 초기화
-      const recognizer = await GestureRecognizer.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: GESTURE_CONFIG.modelPath,
-          delegate: 'GPU'
-        },
-        runningMode: 'VIDEO',
-        numHands: 2,
-        minHandDetectionConfidence: GESTURE_CONFIG.minDetectionConfidence,
-        minHandPresenceConfidence: GESTURE_CONFIG.minDetectionConfidence,
-        minTrackingConfidence: GESTURE_CONFIG.minTrackingConfidence
-      });
-
-      gestureRecognizerRef.current = recognizer;
-
+  
+      gestureRecognizerRef.current = await GestureRecognizer.createFromOptions(
+        vision,
+        {
+          baseOptions: { modelAssetPath: GESTURE_CONFIG.modelPath },
+          runningMode: 'VIDEO',
+          numHands: 2,
+        }
+      );
+  
       if (videoRef.current?.readyState >= 2) {
         detectGesture();
       } else {
         videoRef.current?.addEventListener('loadeddata', detectGesture);
       }
-    } catch (error) {
-      console.error('Failed to start gesture recognition:', error);
+    } catch (err) {
+      console.error('GestureRecognizer initialization error:', err);
     }
   }, [detectGesture]);
+  
 
   const stop = useCallback(() => {
     if (animationFrameRef.current) {
