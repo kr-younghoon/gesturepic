@@ -1,62 +1,78 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import GestureRecognizer from './GestureRecognizer';
 import useCamera from '../../hooks/useCamera';
-import { saveImage, mergeImages } from '../../services/imageService';
 
 const FourCutCamera = ({ onComplete }) => {
-  const { isCameraReady, stream, error } = useCamera();
-  const [currentFrame, setCurrentFrame] = useState(0);
   const [capturedImages, setCapturedImages] = useState([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const { stream, error } = useCamera();
 
-  const handleGestureCapture = (imageData) => {
-    // 이미지 저장
-    saveImage(imageData);
+  const handleCapture = (imageData) => {
     setCapturedImages((prev) => [...prev, imageData]);
-
-    if (currentFrame < 3) {
-      setCurrentFrame((prev) => prev + 1);
-    } else {
-      // 네컷 촬영 완료
-      const combinedImage = mergeImages(capturedImages);
-      console.log('합성된 네컷 이미지:', combinedImage);
-      if (onComplete) onComplete(combinedImage);
-    }
+    setCurrentStep((prev) => prev + 1);
   };
 
-  if (error) return <p>Error: {error}</p>;
-  if (!isCameraReady) return <p>카메라를 준비 중입니다...</p>;
+  useEffect(() => {
+    if (currentStep === 4) {
+      onComplete(capturedImages);
+    }
+  }, [currentStep, capturedImages, onComplete]);
+
+  if (error) {
+    return (
+      <div className="text-red-500 text-center p-4">
+        카메라를 사용할 수 없습니다. 카메라 권한을 확인해주세요.
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="grid grid-cols-2 gap-2">
-        {[0, 1, 2, 3].map((frame) => (
-          <div
-            key={frame}
-            className={`w-40 h-40 border ${
-              frame === currentFrame ? 'border-blue-500' : 'border-gray-300'
-            }`}
+    <div className="w-full max-w-4xl mx-auto p-4">
+      <div className="mb-4 text-center">
+        <h2 className="text-xl font-semibold">
+          {currentStep < 4 ? `${currentStep + 1}번째 사진 촬영` : '촬영 완료!'}
+        </h2>
+        <p className="text-gray-600 mt-2">
+          {currentStep < 4
+            ? '손을 3초간 유지하면 자동으로 촬영됩니다'
+            : '모든 사진이 촬영되었습니다.'}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {capturedImages.map((image, index) => (
+          <div 
+            key={index} 
+            className="aspect-[3/4] relative bg-gray-100 rounded-lg overflow-hidden"
           >
-            {capturedImages[frame] && (
-              <img
-                src={capturedImages[frame]}
-                alt={`Captured Frame ${frame}`}
-                className="w-full h-full"
-              />
-            )}
+            <img
+              src={image}
+              alt={`Captured ${index + 1}`}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+        ))}
+        {currentStep < 4 && stream && (
+          <div className="aspect-[3/4] bg-black rounded-lg overflow-hidden">
+            <GestureRecognizer
+              stream={stream}
+              onCapture={handleCapture}
+            />
+          </div>
+        )}
+        {currentStep < 4 && Array(3 - currentStep).fill(null).map((_, index) => (
+          <div 
+            key={`empty-${index}`} 
+            className="aspect-[3/4] bg-gray-100 rounded-lg flex items-center justify-center"
+          >
+            <span className="text-gray-400">
+              {currentStep + index + 2}번째 사진
+            </span>
           </div>
         ))}
       </div>
-
-      <GestureRecognizer stream={stream} onCapture={handleGestureCapture} />
-
-      {currentFrame === 3 && (
-        <button
-          onClick={() => console.log('네컷 사진 결과 보기')}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          네컷 결과 보기
-        </button>
-      )}
     </div>
   );
 };

@@ -1,37 +1,46 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 
 const useCamera = () => {
-  const [isCameraReady, setIsCameraReady] = useState(false); // 카메라 상태 관리
-  const [stream, setStream] = useState(null); // 카메라 스트림 관리
-  const [error, setError] = useState(null); // 에러 상태 관리
+  const [stream, setStream] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const initCamera = async () => {
       try {
-        // 사용자 권한 요청 및 스트림 가져오기
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user',
+          },
         });
 
-        setStream(videoStream); // 스트림 저장
-        setIsCameraReady(true); // 카메라 준비 완료
+        if (mounted) {
+          setStream(mediaStream);
+        }
       } catch (err) {
-        console.error('카메라 초기화 실패:', err);
-        setError(err.message); // 에러 저장
+        if (mounted) {
+          setError(err.message);
+          console.error('카메라 초기화 실패:', err);
+        }
       }
     };
 
     initCamera();
 
     return () => {
-      // 컴포넌트 언마운트 시 스트림 정리
+      mounted = false;
       if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []); // 컴포넌트 마운트 시 한 번 실행
+  }, []);
 
-  return { isCameraReady, stream, error }; // 상태 및 스트림 반환
+  return { stream, error };
 };
 
 export default useCamera;
