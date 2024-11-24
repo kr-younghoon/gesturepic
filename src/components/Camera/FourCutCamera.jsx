@@ -1,24 +1,29 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import GestureRecognizer from './GestureRecognizer';
 import useCamera from '../../hooks/useCamera';
+import { saveImage } from '../../services/imageService';
 
 const FourCutCamera = ({ onComplete }) => {
+  const router = useRouter();
   const [capturedImages, setCapturedImages] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
   const { stream, error } = useCamera();
 
   const handleCapture = (imageData) => {
-    setCapturedImages((prev) => [...prev, imageData]);
+    const newImages = [...capturedImages, imageData];
+    setCapturedImages(newImages);
+    saveImage(imageData); // 이미지를 로컬 스토리지에 저장
     setCurrentStep((prev) => prev + 1);
   };
 
   useEffect(() => {
     if (currentStep === 4) {
-      onComplete(capturedImages);
+      router.push('/result');
     }
-  }, [currentStep, capturedImages, onComplete]);
+  }, [currentStep, router]);
 
   if (error) {
     return (

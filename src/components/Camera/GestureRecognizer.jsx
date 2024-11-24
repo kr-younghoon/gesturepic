@@ -66,6 +66,40 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
       if (video.currentTime !== lastVideoTime.current) {
         lastVideoTime.current = video.currentTime;
         
+        // 캔버스에 현재 비디오 프레임 그리기
+        const ctx = canvasRef.current.getContext('2d');
+        
+        // 캔버스 크기를 424x565로 고정
+        const targetWidth = 424;
+        const targetHeight = 565;
+        canvasRef.current.width = targetWidth;
+        canvasRef.current.height = targetHeight;
+        
+        // 비디오 비율 계산
+        const videoAspect = video.videoWidth / video.videoHeight;
+        const targetAspect = targetWidth / targetHeight;
+        
+        let sx = 0, sy = 0, sWidth = video.videoWidth, sHeight = video.videoHeight;
+        
+        if (videoAspect > targetAspect) {
+          // 비디오가 더 넓은 경우
+          sWidth = video.videoHeight * targetAspect;
+          sx = (video.videoWidth - sWidth) / 2;
+        } else {
+          // 비디오가 더 높은 경우
+          sHeight = video.videoWidth / targetAspect;
+          sy = (video.videoHeight - sHeight) / 2;
+        }
+        
+        // 비디오 프레임을 캔버스에 그리기
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(
+          video,
+          sx, sy, sWidth, sHeight,
+          0, 0, targetWidth, targetHeight
+        );
+        
         try {
           const results = await gestureRecognizerRef.current.recognizeForVideo(video, performance.now());
           if (results.gestures?.length > 0) {
@@ -148,17 +182,17 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
   };
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full flex items-center justify-center">
       <video
         ref={videoRef}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain"
         playsInline
         autoPlay
         muted
       />
       <canvas
         ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full"
+        className="absolute top-0 left-0 w-full h-full object-contain"
       />
       {currentGesture && (
         <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded">
