@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { getSupabaseClient } from '@/shared/api/supabase'
 import { useQueryClient } from '@tanstack/react-query'
-import { NavBar } from '@/features/navigation/ui/nav-bar'
+import { NavBar } from '@/components/navigation/NavBar'
 
 export function ClientLayout({ children }) {
   const queryClient = useQueryClient()

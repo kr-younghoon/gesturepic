@@ -1,6 +1,6 @@
 'use client'
 
-import { CameraView } from '@/features/studio/ui/camera-view'
+import { CameraView } from '@/components/camera/CameraView'
 
 export default function StudioPage() {
   return (
