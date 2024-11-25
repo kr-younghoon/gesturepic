@@ -365,9 +365,9 @@ const GestureEffects = ({ gesture, onRender }) => {
         fireTextureRef
     ) => {
         const fireGeometry = new THREE.BufferGeometry();
-        const fireCount = 10;  
+        const fireCount = 30;  
         const positions = new Float32Array(fireCount * 3);
-        const velocities = new Float32Array(fireCount * 3);
+        const velocities = new Float32Array(fireCount * 4);
         const colors = new Float32Array(fireCount * 4);
         const sizes = new Float32Array(fireCount);
         const lifetimes = new Float32Array(fireCount);
