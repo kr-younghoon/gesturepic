@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import GestureRecognizer from './GestureRecognizer';
 import useCamera from '../../hooks/useCamera';
 import { saveImage } from '../../services/imageService';
+import GestureEffects from '../Effect/GestureEffects';
 
 const FourCutCamera = ({ onComplete }) => {
   const router = useRouter();
   const [capturedImages, setCapturedImages] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [gesture, setGesture] = useState(null);
+
   const { stream, error } = useCamera();
 
   const handleCapture = (imageData) => {
@@ -17,6 +20,11 @@ const FourCutCamera = ({ onComplete }) => {
     setCapturedImages(newImages);
     saveImage(imageData); // 이미지를 로컬 스토리지에 저장
     setCurrentStep((prev) => prev + 1);
+  };
+
+  const handleGesture = (detectedGesture) => {
+    setGesture(detectedGesture);
+    setTimeout(() => setGesture(null), 5000); // 5초 후 효과 제거
   };
 
   useEffect(() => {
@@ -60,11 +68,17 @@ const FourCutCamera = ({ onComplete }) => {
           </div>
         ))}
         {currentStep < 4 && stream && (
-          <div className="aspect-[3/4] bg-black rounded-lg overflow-hidden">
+          <div className="aspect-[3/4] bg-black rounded-lg overflow-hidden relative">
             <GestureRecognizer
               stream={stream}
               onCapture={handleCapture}
+              onGestureDetected={handleGesture}
             />
+            {gesture && (
+              <div className="absolute inset-0 z-10">
+                <GestureEffects gesture={gesture} />
+              </div>
+            )}
           </div>
         )}
         {currentStep < 4 && Array(3 - currentStep).fill(null).map((_, index) => (

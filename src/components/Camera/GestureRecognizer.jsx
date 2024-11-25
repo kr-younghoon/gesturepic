@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { FilesetResolver, GestureRecognizer } from '@mediapipe/tasks-vision';
+import GestureEffects from '../Effect/GestureEffects';
 
 const VALID_GESTURES = ['Victory', 'Closed_Fist'];
 
-const GestureRecognizerComponent = ({ stream, onCapture }) => {
+const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -15,6 +16,11 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
   const [gestureStartTime, setGestureStartTime] = useState(null);
   const [gestureConfidence, setGestureConfidence] = useState(0);
   const isCapturing = useRef(false); // 캡처 중복 방지를 위한 플래그
+  const effectCanvasRef = useRef(null);
+
+  const handleEffectRender = useCallback((effectCanvas) => {
+    effectCanvasRef.current = effectCanvas;
+  }, []);
 
   useEffect(() => {
     const initializeGestureRecognizer = async () => {
@@ -55,7 +61,8 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
     let animationFrameId;
 
     const predictWebcam = async () => {
-      if (!video.videoWidth) {
+      const canvas = canvasRef.current;
+      if (!video.videoWidth || !canvas) {
         animationFrameId = requestAnimationFrame(predictWebcam);
         return;
       }
@@ -65,13 +72,17 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
         lastVideoTime.current = video.currentTime;
         
         // 캔버스에 현재 비디오 프레임 그리기
-        const ctx = canvasRef.current.getContext('2d');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          animationFrameId = requestAnimationFrame(predictWebcam);
+          return;
+        }
         
         // 캔버스 크기를 424x565로 고정
         const targetWidth = 424;
         const targetHeight = 565;
-        canvasRef.current.width = targetWidth;
-        canvasRef.current.height = targetHeight;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
         
         // 비디오 비율 계산
         const videoAspect = video.videoWidth / video.videoHeight;
@@ -89,16 +100,28 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
           sy = (video.videoHeight - sHeight) / 2;
         }
         
-        // 비디오 프레임을 캔버스에 그리기
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, targetWidth, targetHeight);
-        ctx.drawImage(
-          video,
-          sx, sy, sWidth, sHeight,
-          0, 0, targetWidth, targetHeight
-        );
-
         try {
+          // 비디오 프레임을 캔버스에 그리기
+          ctx.fillStyle = 'black';
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
+          ctx.drawImage(
+            video,
+            sx, sy, sWidth, sHeight,
+            0, 0, targetWidth, targetHeight
+          );
+
+          // Three.js 효과가 있다면 합성
+          if (effectCanvasRef.current) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.drawImage(
+              effectCanvasRef.current,
+              0, 0, effectCanvasRef.current.width, effectCanvasRef.current.height,
+              0, 0, targetWidth, targetHeight
+            );
+            ctx.restore();
+          }
+
           const results = await gestureRecognizerRef.current.recognizeForVideo(video, performance.now());
           
           // 랜드마크 그리기
@@ -158,16 +181,17 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
               
               if (currentGesture === detectedGesture) {
                 const currentTime = Date.now();
-                if (
-                  gestureStartTime &&
-                  currentTime - gestureStartTime >= 3000 && // 3초 유지 확인
-                  !isCapturing.current // 캡처 중이 아닐 때만 실행
-                ) {
-                  isCapturing.current = true; // 캡처 중 플래그 설정
-                  const imageData = canvasRef.current.toDataURL('image/png');
-                  await onCapture(imageData); // 이미지 캡처 데이터 전달
-                  resetGesture(); // 상태 초기화
-                  isCapturing.current = false; // 캡처 완료 후 플래그 해제
+                if (gestureStartTime) {
+                  // 제스처가 감지되면 부모 컴포넌트에 알림
+                  onGestureDetected?.(detectedGesture);
+                  
+                  if (currentTime - gestureStartTime >= 3000 && !isCapturing.current) {
+                    isCapturing.current = true; // 캡처 중 플래그 설정
+                    const imageData = canvas.toDataURL('image/png');
+                    await onCapture(imageData); // 이미지 캡처 데이터 전달
+                    resetGesture(); // 상태 초기화
+                    isCapturing.current = false; // 캡처 완료 후 플래그 해제
+                  }
                 }
               } else {
                 setCurrentGesture(detectedGesture);
@@ -194,18 +218,24 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isInitialized, videoRef, onCapture, currentGesture, gestureStartTime]);
+  }, [isInitialized, videoRef, onCapture, currentGesture, gestureStartTime, onGestureDetected]);
 
   useEffect(() => {
+    let mounted = true;
+    
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
       videoRef.current.play().catch(err => {
-        console.error("비디오 재생 실패:", err);
+        if (mounted) {
+          console.error("비디오 재생 실패:", err);
+        }
       });
     }
 
     return () => {
+      mounted = false;
       if (videoRef.current) {
+        videoRef.current.pause();
         videoRef.current.srcObject = null;
       }
     };
@@ -230,18 +260,18 @@ const GestureRecognizerComponent = ({ stream, onCapture }) => {
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div className="relative w-full h-full">
       <video
         ref={videoRef}
-        className="w-full h-full object-contain"
+        className="absolute top-0 left-0 w-full h-full object-cover invisible"
         playsInline
         autoPlay
-        muted
       />
       <canvas
         ref={canvasRef}
         className="absolute top-0 left-0 w-full h-full object-contain"
       />
+      <GestureEffects gesture={currentGesture} onRender={handleEffectRender} />
       {currentGesture && (
         <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded">
           {getGestureDisplayName(currentGesture)} ({Math.round(gestureConfidence * 100)}%)
