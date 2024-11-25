@@ -15,11 +15,22 @@ const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) =>
   const [currentGesture, setCurrentGesture] = useState(null);
   const [gestureStartTime, setGestureStartTime] = useState(null);
   const [gestureConfidence, setGestureConfidence] = useState(0);
-  const isCapturing = useRef(false); // 캡처 중복 방지를 위한 플래그
+  const isCapturing = useRef(false);
   const effectCanvasRef = useRef(null);
+  const captureTimeoutRef = useRef(null);
 
   const handleEffectRender = useCallback((effectCanvas) => {
     effectCanvasRef.current = effectCanvas;
+  }, []);
+
+  const resetGesture = useCallback(() => {
+    setCurrentGesture(null);
+    setGestureStartTime(null);
+    setGestureConfidence(0);
+    if (captureTimeoutRef.current) {
+      clearTimeout(captureTimeoutRef.current);
+      captureTimeoutRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -181,26 +192,38 @@ const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) =>
               
               if (currentGesture === detectedGesture) {
                 const currentTime = Date.now();
-                if (gestureStartTime) {
+                if (gestureStartTime && !isCapturing.current) {
                   // 제스처가 감지되면 부모 컴포넌트에 알림
                   onGestureDetected?.(detectedGesture);
                   
-                  if (currentTime - gestureStartTime >= 3000 && !isCapturing.current) {
+                  if (currentTime - gestureStartTime >= 3000) {
                     isCapturing.current = true; // 캡처 중 플래그 설정
-                    const imageData = canvas.toDataURL('image/png');
-                    await onCapture(imageData); // 이미지 캡처 데이터 전달
-                    resetGesture(); // 상태 초기화
-                    isCapturing.current = false; // 캡처 완료 후 플래그 해제
+                    
+                    // 캡처 작업을 비동기로 처리
+                    const captureImage = async () => {
+                      try {
+                        const imageData = canvas.toDataURL('image/png');
+                        await onCapture(imageData);
+                      } finally {
+                        // 캡처 완료 후 1초 뒤에 상태 초기화
+                        captureTimeoutRef.current = setTimeout(() => {
+                          isCapturing.current = false;
+                          resetGesture();
+                        }, 1000);
+                      }
+                    };
+                    
+                    captureImage();
                   }
                 }
-              } else {
+              } else if (!isCapturing.current) {
                 setCurrentGesture(detectedGesture);
                 setGestureStartTime(Date.now());
               }
-            } else {
+            } else if (!isCapturing.current) {
               resetGesture();
             }
-          } else {
+          } else if (!isCapturing.current) {
             resetGesture();
           }
         } catch (error) {
@@ -241,12 +264,16 @@ const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) =>
     };
   }, [stream]);
 
-  // 제스처 초기화
-  const resetGesture = () => {
-    setCurrentGesture(null);
-    setGestureStartTime(null);
-    setGestureConfidence(0);
-  };
+  useEffect(() => {
+    return () => {
+      if (captureTimeoutRef.current) {
+        clearTimeout(captureTimeoutRef.current);
+      }
+      if (gestureRecognizerRef.current) {
+        gestureRecognizerRef.current.close();
+      }
+    };
+  }, []);
 
   const getGestureDisplayName = (gesture) => {
     switch (gesture) {
