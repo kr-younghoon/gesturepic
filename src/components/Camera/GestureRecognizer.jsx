@@ -18,6 +18,8 @@ const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) =>
   const isCapturing = useRef(false);
   const effectCanvasRef = useRef(null);
   const captureTimeoutRef = useRef(null);
+  const [lastValidGesture, setLastValidGesture] = useState(null);
+  const gestureTimeoutRef = useRef(null);
 
   const handleEffectRender = useCallback((effectCanvas) => {
     effectCanvasRef.current = effectCanvas;
@@ -32,6 +34,36 @@ const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) =>
       captureTimeoutRef.current = null;
     }
   }, []);
+
+  const handleGestureChange = useCallback((detectedGesture, confidence) => {
+    // 현재 감지된 제스처가 유효하고 신뢰도가 높은 경우
+    if (VALID_GESTURES.includes(detectedGesture) && confidence > 0.7) {
+      // 이전 타임아웃이 있다면 취소
+      if (gestureTimeoutRef.current) {
+        clearTimeout(gestureTimeoutRef.current);
+        gestureTimeoutRef.current = null;
+      }
+      
+      // 새로운 제스처가 감지되면 바로 알림
+      if (lastValidGesture !== detectedGesture) {
+        setLastValidGesture(detectedGesture);
+        onGestureDetected?.(detectedGesture);
+      }
+    } else {
+      // 제스처가 감지되지 않은 경우
+      if (lastValidGesture && !gestureTimeoutRef.current) {
+        // 1초 동안 기다린 후 제스처를 null로 설정
+        gestureTimeoutRef.current = setTimeout(() => {
+          // 타임아웃 시점에 다시 한번 체크
+          if (!VALID_GESTURES.includes(detectedGesture) || confidence <= 0.7) {
+            setLastValidGesture(null);
+            onGestureDetected?.(null);
+          }
+          gestureTimeoutRef.current = null;
+        }, 1000);
+      }
+    }
+  }, [onGestureDetected, lastValidGesture]);
 
   useEffect(() => {
     const initializeGestureRecognizer = async () => {
@@ -186,7 +218,8 @@ const GestureRecognizerComponent = ({ stream, onCapture, onGestureDetected }) =>
             const detectedGesture = gesture.categoryName;
             const confidence = gesture.score;
 
-            // 유효한 제스처인지 확인
+            handleGestureChange(detectedGesture, confidence);
+            
             if (VALID_GESTURES.includes(detectedGesture) && confidence > 0.7) {
               setGestureConfidence(confidence);
               

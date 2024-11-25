@@ -3,12 +3,32 @@
  * @param {string} imageData - 캔버스에서 추출된 이미지 데이터 (Base64 문자열).
  */
 const STORAGE_KEY = 'capturedImages';
+const MAX_IMAGES = 4;
 
 export const saveImage = (imageData) => {
   try {
-    const savedImages = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    savedImages.push(imageData);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedImages));
+    // 기존 이미지 로드
+    let savedImages = [];
+    try {
+      savedImages = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch {
+      // 파싱 실패시 빈 배열로 시작
+      savedImages = [];
+    }
+    
+    // 최근 3장만 유지하고 새 이미지 추가
+    savedImages = [...savedImages.slice(-3), imageData].slice(-MAX_IMAGES);
+    
+    // 저장 시도
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedImages));
+    } catch {
+      // 저장 실패시 localStorage 초기화 후 다시 시도
+      localStorage.clear();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([imageData]));
+      savedImages = [imageData];
+    }
+    
     return savedImages;
   } catch (error) {
     console.error('이미지 저장 실패:', error);

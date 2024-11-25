@@ -23,8 +23,13 @@ const FourCutCamera = ({ onComplete }) => {
   };
 
   const handleGesture = (detectedGesture) => {
-    setGesture(detectedGesture);
-    setTimeout(() => setGesture(null), 5000); // 5초 후 효과 제거
+    // Victory 제스처일 때만 설정
+    if (detectedGesture === 'Victory') {
+      setGesture('Victory');
+    } else {
+      // Victory가 아닌 다른 제스처이거나 제스처가 없을 때는 null로 설정
+      setGesture(null);
+    }
   };
 
   useEffect(() => {
